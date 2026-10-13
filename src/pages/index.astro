@@ -1,0 +1,356 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const title = 'Pressure Washing Quote Calculator (US & UK) | Price Per Sq Ft & m²';
+const description =
+  'Free pressure washing quote calculator. Price driveways, patios, house washes, decks, roofs and gutters, then check the quote beats your target hourly rate.';
+
+const faqs = [
+  {
+    q: 'How much to charge to pressure wash a 2000 sq ft house?',
+    a: 'Using a typical soft wash rate of $0.26 per sq ft, a 2,000 sq ft single-storey house comes to about $520. Public price guides put the range at roughly $240 to $800 ($0.12 to $0.40 per sq ft). Add about 30% for a two-storey house (around $676 at the typical rate) and about 35% for heavy mould or algae. Three storeys or more should be priced after a site visit.',
+  },
+  {
+    q: 'How do I price a pressure washing job?',
+    a: 'Measure the area, multiply by your rate per square foot (or m²), then adjust for condition and height. If the total is below your job minimum, charge the minimum. Finally, divide the price by the hours you expect to spend, including setup and travel, and check it beats the hourly rate you need to earn.',
+  },
+  {
+    q: 'How long to pressure wash a 2000 sq ft house?',
+    a: 'Most solo operators report around 2 to 4 hours on site for a 2,000 sq ft house soft wash, plus setup, rinse-down and travel. Heavy algae, two storeys, lots of windows or tight access push it towards the top of that range. Time your own jobs and use those numbers in the calculator.',
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+
+const input =
+  'mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base shadow-sm focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30';
+const label = 'block text-sm font-medium text-slate-700';
+const hint = 'mt-1 text-xs text-slate-500';
+---
+<Layout title={title} description={description}>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faqSchema)} />
+
+  <main class="mx-auto max-w-3xl px-4 py-6 sm:py-10">
+    <header class="mb-6">
+      <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Pressure Washing Quote Calculator</h1>
+      <p class="mt-2 text-slate-600">
+        Price a jet washing or soft washing job in seconds, then check the quote beats your target hourly rate.
+      </p>
+    </header>
+
+    <form id="calc" class="grid gap-6 md:grid-cols-5" onsubmit="return false" novalidate>
+      <!-- Inputs -->
+      <section class="space-y-5 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6 md:col-span-3 no-print" aria-label="Job details">
+        <fieldset>
+          <legend class={label}>Market</legend>
+          <div class="mt-1 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1" role="group">
+            <button type="button" data-market="US" class="market-btn rounded-md px-3 py-2 text-sm font-semibold">US (sq ft, $)</button>
+            <button type="button" data-market="UK" class="market-btn rounded-md px-3 py-2 text-sm font-semibold">UK (m², £)</button>
+          </div>
+        </fieldset>
+
+        <div>
+          <label for="surface" class={label}>Surface</label>
+          <select id="surface" class={input}></select>
+        </div>
+
+        <div>
+          <label for="area" class={label}><span id="area-label">Area</span> (<span class="unit-area">sq ft</span>)</label>
+          <input id="area" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1000" class={input} />
+        </div>
+
+        <fieldset>
+          <legend class={label}>Condition</legend>
+          <div class="mt-1 grid grid-cols-2 gap-2">
+            <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2.5 text-sm has-[:checked]:border-sky-600 has-[:checked]:bg-sky-50">
+              <input type="radio" name="condition" value="normal" checked class="accent-sky-700" /> Normal
+            </label>
+            <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2.5 text-sm has-[:checked]:border-sky-600 has-[:checked]:bg-sky-50">
+              <input type="radio" name="condition" value="heavy" class="accent-sky-700" /> Heavy (×1.35)
+            </label>
+          </div>
+          <p class={hint}>Heavy = thick mould, algae, lichen or stains.</p>
+        </fieldset>
+
+        <div id="storeys-wrap" hidden>
+          <label for="storeys" class={label}>Storeys</label>
+          <select id="storeys" class={input}>
+            <option value="1">1 storey (×1.00)</option>
+            <option value="2">2 storeys (×1.30)</option>
+            <option value="3">3 or more (price manually)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="rate" class={label}>Rate (<span class="sym">$</span> per <span class="unit-rate">sq ft</span>)</label>
+            <input id="rate" type="number" inputmode="decimal" min="0" step="0.01" class={input} />
+            <p id="rate-hint" class={hint}></p>
+          </div>
+          <div>
+            <label for="minimum" class={label}>Job minimum (<span class="sym">$</span>)</label>
+            <input id="minimum" type="number" inputmode="decimal" min="0" step="1" class={input} />
+          </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-5">
+          <h2 class="text-sm font-semibold text-slate-800">Check it against your hourly rate <span class="font-normal text-slate-500">(optional)</span></h2>
+
+          <div id="aph-wrap" class="mt-3" hidden>
+            <label for="aph" class={label}>Area per hour (<span class="unit-area">sq ft</span>/hr)</label>
+            <input id="aph" type="number" inputmode="decimal" min="0" step="any" class={input} />
+            <p class={hint}>Fills in hours on site for you. Forum-reported range is 1,200–2,200 sq ft/hr (110–200 m²/hr) for one person with a surface cleaner. Clear it to type hours yourself.</p>
+          </div>
+
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <div>
+              <label for="hours" class={label}>Hours on site</label>
+              <input id="hours" type="number" inputmode="decimal" min="0" step="0.25" class={input} />
+            </div>
+            <div>
+              <label for="setup" class={label}>Setup / travel hours</label>
+              <input id="setup" type="number" inputmode="decimal" min="0" step="0.25" class={input} />
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label for="target" class={label}>Target hourly rate (<span class="sym">$</span>/hr)</label>
+            <input id="target" type="number" inputmode="decimal" min="0" step="1" placeholder="Set your own" class={input} />
+          </div>
+        </div>
+      </section>
+
+      <!-- Results -->
+      <section class="md:col-span-2" aria-live="polite" aria-label="Quote">
+        <div class="space-y-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6 md:sticky md:top-6">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Quote price</p>
+            <p id="price" class="text-4xl font-bold tracking-tight text-sky-800">–</p>
+            <p id="price-note" class="mt-1 text-sm text-slate-600"></p>
+          </div>
+
+          <dl class="grid grid-cols-3 gap-2 text-center text-sm">
+            <div class="rounded-lg bg-slate-50 p-2"><dt class="text-slate-600">Low</dt><dd id="low" class="font-semibold">–</dd></div>
+            <div class="rounded-lg bg-sky-50 p-2"><dt class="text-slate-600">Typical</dt><dd id="typical" class="font-semibold">–</dd></div>
+            <div class="rounded-lg bg-slate-50 p-2"><dt class="text-slate-600">High</dt><dd id="high" class="font-semibold">–</dd></div>
+          </dl>
+
+          <div id="hourly-box" class="rounded-lg border p-3 text-sm">
+            <p class="font-medium">Implied hourly: <span id="implied">–</span></p>
+            <p id="hourly-msg" class="mt-1"></p>
+          </div>
+
+          <p class="text-sm">Price needed to hit your target: <strong id="needed">–</strong></p>
+
+          <div class="grid grid-cols-2 gap-2 no-print">
+            <button type="button" id="copy" class="rounded-lg bg-sky-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-sky-800">Copy quote text</button>
+            <button type="button" id="print" class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold hover:bg-slate-50">Print</button>
+          </div>
+          <p id="copy-status" class="text-xs text-slate-500" role="status"></p>
+          <pre id="quote-text" class="hidden whitespace-pre-wrap text-sm print:block"></pre>
+        </div>
+      </section>
+    </form>
+
+    <article class="prose-sm mt-12 space-y-8 text-slate-700 no-print">
+      <section>
+        <h2 class="text-xl font-bold text-slate-900">How to price a pressure washing job</h2>
+        <ol class="mt-3 list-decimal space-y-2 pl-5">
+          <li><strong>Area × rate.</strong> Measure the surface (length × width) and multiply by your rate per sq ft or m². Gutters are priced per length instead.</li>
+          <li><strong>Apply your minimum.</strong> Small jobs still cost you travel and setup. If area × rate comes in under your job minimum, charge the minimum.</li>
+          <li><strong>Adjust for condition and height.</strong> Heavy mould, algae or lichen takes longer and uses more chemical, so add around 35%. Two-storey work adds around 30%. Three storeys or more needs a site visit.</li>
+          <li><strong>Check it against your hourly target.</strong> Divide the price by your total hours, including setup and travel. If it is below what you need to earn per hour, raise the price or walk away.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-bold text-slate-900">Frequently asked questions</h2>
+        <div class="mt-3 space-y-3">
+          {faqs.map((f) => (
+            <details class="rounded-lg bg-white p-4 ring-1 ring-slate-200">
+              <summary class="cursor-pointer font-semibold text-slate-900">{f.q}</summary>
+              <p class="mt-2">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-slate-900">Disclaimer</h2>
+        <p class="mt-2 text-sm">
+          Default rates are starting points taken from public price guides, not a recommendation. Local prices, overheads and competition vary a lot. Set your own rates, minimum and target hourly rate.
+        </p>
+      </section>
+    </article>
+  </main>
+</Layout>
+
+<script>
+  import { MARKETS, CONDITION, getSurface, quote, hoursFromRate } from '../lib/calc.js';
+
+  const STORAGE_KEY = 'pwc-market';
+  const SQFT_PER_M2 = 10.7639;
+  const $ = (id) => document.getElementById(id);
+  const num = (el) => (el.value.trim() === '' ? null : Number(el.value));
+
+  const els = {
+    surface: $('surface'), area: $('area'), storeys: $('storeys'), rate: $('rate'), minimum: $('minimum'),
+    aph: $('aph'), hours: $('hours'), setup: $('setup'), target: $('target'),
+  };
+
+  let market = 'US';
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === 'US' || saved === 'UK') market = saved;
+    else if (/^en-GB/i.test(navigator.language)) market = 'UK';
+  } catch {}
+
+  const fmt = (n, dp = 2) =>
+    new Intl.NumberFormat(market === 'UK' ? 'en-GB' : 'en-US', {
+      style: 'currency', currency: MARKETS[market].currency, minimumFractionDigits: dp, maximumFractionDigits: dp,
+    }).format(n);
+
+  function fillSurfaces(keepId) {
+    const m = MARKETS[market];
+    els.surface.innerHTML = m.surfaces.map((s) => `<option value="${s.id}">${s.name}</option>`).join('');
+    if (m.surfaces.some((s) => s.id === keepId)) els.surface.value = keepId;
+  }
+
+  function applySurface() {
+    const m = MARKETS[market];
+    const s = getSurface(market, els.surface.value);
+    els.rate.value = s.typical;
+    $('storeys-wrap').hidden = !s.storeys;
+    $('aph-wrap').hidden = !s.flatwork;
+    const unit = s.linear ? m.lengthUnit : m.areaUnit;
+    $('area-label').textContent = s.linear ? 'Length' : 'Area';
+    document.querySelectorAll('.unit-rate').forEach((e) => (e.textContent = unit));
+    $('rate-hint').textContent = `Guide range ${fmt(s.low)}–${fmt(s.high)}`;
+    autoHours();
+  }
+
+  function applyMarket(prev) {
+    const m = MARKETS[market];
+    document.querySelectorAll('.market-btn').forEach((b) => {
+      const on = b.dataset.market === market;
+      b.setAttribute('aria-pressed', String(on));
+      b.className = `market-btn rounded-md px-3 py-2 text-sm font-semibold ${on ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600'}`;
+    });
+    document.querySelectorAll('.sym').forEach((e) => (e.textContent = m.symbol));
+    document.querySelectorAll('.unit-area').forEach((e) => (e.textContent = m.areaUnit));
+    els.minimum.value = m.jobMinimum;
+    els.aph.value = m.areaPerHour;
+
+    // Carry the area across, converted, if the old surface was an area (not gutter length).
+    const prevSurface = prev ? getSurface(prev, els.surface.value) : null;
+    const area = num(els.area);
+    if (prev && area != null) {
+      els.area.value = prevSurface.linear ? '' : Math.round(market === 'UK' ? area / SQFT_PER_M2 : area * SQFT_PER_M2);
+    }
+    fillSurfaces(prevSurface?.id);
+    applySurface();
+  }
+
+  function autoHours() {
+    const s = getSurface(market, els.surface.value);
+    if (!s.flatwork) return;
+    const h = hoursFromRate(num(els.area), num(els.aph));
+    if (h != null) els.hours.value = h;
+  }
+
+  let lastText = '';
+
+  function render() {
+    const m = MARKETS[market];
+    const condition = document.querySelector('input[name="condition"]:checked').value;
+    const area = num(els.area);
+    const q = quote({
+      market, surfaceId: els.surface.value, area, condition, storeys: num(els.storeys),
+      rate: num(els.rate) ?? 0, minimum: num(els.minimum) ?? 0,
+      hours: num(els.hours), setupHours: num(els.setup), target: num(els.target),
+    });
+    const unit = q.surface.linear ? m.lengthUnit : m.areaUnit;
+
+    const manual = q.price == null;
+    const noArea = !area;
+    $('price').textContent = manual ? 'Price manually' : noArea ? '–' : fmt(q.price);
+    $('price-note').textContent = manual
+      ? '3+ storeys needs specialist access. Visit the site and price it by hand.'
+      : noArea ? `Enter the ${q.surface.linear ? 'length' : 'area'} to see a price.`
+      : q.price === (num(els.minimum) ?? 0) ? 'Job minimum applied.' : '';
+
+    const show = !manual && !noArea;
+    $('low').textContent = show ? fmt(q.low, 0) : '–';
+    $('typical').textContent = show ? fmt(q.price, 0) : '–';
+    $('high').textContent = show ? fmt(q.high, 0) : '–';
+
+    const box = $('hourly-box');
+    const styles = {
+      green: ['border-emerald-300 bg-emerald-50 text-emerald-900', 'At or above your target.'],
+      amber: ['border-amber-300 bg-amber-50 text-amber-900', 'Within 15% below your target.'],
+      red: ['border-red-300 bg-red-50 text-red-900', 'More than 15% below your target.'],
+    };
+    const st = show ? styles[q.status] : null;
+    box.className = `rounded-lg border p-3 text-sm ${st ? st[0] : 'border-slate-200 bg-slate-50 text-slate-700'}`;
+    $('implied').textContent = show && q.implied != null ? `${fmt(q.implied)}/hr` : '–';
+    $('hourly-msg').textContent = st ? st[1]
+      : manual ? 'Price this job manually, then check it against your hours.'
+      : noArea ? 'Enter the job size first.'
+      : !q.totalHours ? 'Add hours on site to see what this job pays per hour.'
+      : 'Set your own target hourly rate to check this quote.';
+    $('needed').textContent = q.needed != null ? fmt(q.needed) : num(els.target) ? 'add hours' : 'set your own target';
+
+    const cond = condition === 'heavy' ? `heavy (×${CONDITION.heavy})` : 'normal';
+    const lines = [
+      `Pressure washing quote`,
+      `Surface: ${q.surface.name}`,
+      `${q.surface.linear ? 'Length' : 'Area'}: ${area ?? 0} ${unit}`,
+      `Condition: ${cond}`,
+    ];
+    if (q.surface.storeys) lines.push(`Storeys: ${num(els.storeys) >= 3 ? '3+' : num(els.storeys)}`);
+    lines.push(manual ? 'Price: to be confirmed after site visit' : `Price: ${fmt(q.price)}`);
+    if (!manual && area) lines.push(`Typical range: ${fmt(q.low, 0)}–${fmt(q.high, 0)}`);
+    lastText = lines.join('\n');
+    $('quote-text').textContent = lastText;
+  }
+
+  // Events
+  document.querySelectorAll('.market-btn').forEach((b) =>
+    b.addEventListener('click', () => {
+      if (b.dataset.market === market) return;
+      const prev = market;
+      market = b.dataset.market;
+      try { localStorage.setItem(STORAGE_KEY, market); } catch {}
+      applyMarket(prev);
+      render();
+    }),
+  );
+  els.surface.addEventListener('change', () => { applySurface(); render(); });
+  els.area.addEventListener('input', () => { autoHours(); render(); });
+  els.aph.addEventListener('input', () => { autoHours(); render(); });
+  $('calc').addEventListener('input', render);
+  $('calc').addEventListener('change', render);
+
+  $('copy').addEventListener('click', async () => {
+    let ok = false;
+    try { await navigator.clipboard.writeText(lastText); ok = true; } catch {
+      const t = document.createElement('textarea');
+      t.value = lastText; document.body.appendChild(t); t.select();
+      try { ok = document.execCommand('copy'); } catch {}
+      t.remove();
+    }
+    $('copy-status').textContent = ok ? 'Quote copied.' : 'Copy failed. Select the text and copy it by hand.';
+  });
+  $('print').addEventListener('click', () => window.print());
+
+  applyMarket(null);
+  render();
+</script>
